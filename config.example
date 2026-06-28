@@ -1,0 +1,8 @@
+# tpwire config — copy to ${XDG_CONFIG_HOME:-~/.config}/tpwire/config
+#
+# Pin to a specific trackpad by Bluetooth MAC. The address never changes,
+# so this is faster and more robust than matching by name. If unset, tpwire
+# falls back to matching paired devices named "Magic Trackpad".
+#
+# Find it with:  blueutil --paired
+TPWIRE_MAC=60-fb-42-d5-ca-50

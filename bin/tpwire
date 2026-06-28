@@ -1,0 +1,58 @@
+#!/bin/zsh
+# tpwire — force an Apple Magic Trackpad onto its wired USB-HID transport
+# by removing its Bluetooth pairing. While paired, macOS routes trackpad
+# input over the Bluetooth link even when the cable is attached, which
+# reintroduces the 2.4 GHz interference lag. Unpairing forces USB-HID.
+#
+# Target selection:
+#   - TPWIRE_MAC set (env, or config file) -> unpair that address directly.
+#   - otherwise                            -> match paired devices by name.
+# Config file (sourced if present): ${XDG_CONFIG_HOME:-~/.config}/tpwire/config
+#   e.g.  TPWIRE_MAC=60-fb-42-d5-ca-50
+set -eu
+
+CONFIG="${TPWIRE_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/tpwire/config}"
+[ -r "$CONFIG" ] && . "$CONFIG"
+MAC="${TPWIRE_MAC:-}"
+
+find_blueutil() {
+  local c
+  for c in \
+    "$(command -v blueutil 2>/dev/null || true)" \
+    /opt/homebrew/bin/blueutil \
+    /usr/local/bin/blueutil
+  do
+    [ -n "${c:-}" ] && [ -x "$c" ] && { print -r -- "$c"; return 0; }
+  done
+  return 1
+}
+
+BLUEUTIL="$(find_blueutil)" || {
+  print -u2 -- "tpwire: blueutil not found (install: brew install blueutil)"
+  exit 127
+}
+
+unpair() {
+  "$BLUEUTIL" --unpair "$1"
+  print -- "tpwire: unpaired $1"
+}
+
+if [ -n "$MAC" ]; then
+  MAC="${MAC//:/-}"   # accept colon-separated input too
+  MAC="${MAC:l}"      # blueutil --paired prints lowercase hex
+  if ! print -r -- "$MAC" | grep -qE '^([0-9a-f]{2}-){5}[0-9a-f]{2}$'; then
+    print -u2 -- "tpwire: invalid TPWIRE_MAC '$MAC' (expected xx-xx-xx-xx-xx-xx)"
+    exit 2
+  fi
+  # No-op unless the address is actually paired (avoids a failing --unpair).
+  if "$BLUEUTIL" --paired | grep -Fqi -- "$MAC"; then
+    unpair "$MAC"
+  fi
+else
+  "$BLUEUTIL" --paired \
+    | grep -i 'Magic Trackpad' \
+    | grep -oiE '([0-9a-f]{2}-){5}[0-9a-f]{2}' \
+    | while read -r mac; do
+        unpair "$mac"
+      done
+fi
