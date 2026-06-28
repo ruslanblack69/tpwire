@@ -108,8 +108,8 @@ you want wireless back.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+[MIT](LICENSE) © Ruslan Black
 
 ## Author
 
-Ruslan Black <mail@ruslan.black>
+[Ruslan Black](https://ruslan.black/) 🖤
