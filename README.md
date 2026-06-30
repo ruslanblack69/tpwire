@@ -67,10 +67,18 @@ works as a one-off env override: `TPWIRE_MAC=60-fb-42-d5-ca-50 ~/.local/bin/tpwi
 - `bin/tpwire` unpairs the configured `TPWIRE_MAC`, or — if unset — lists paired
   devices, matches `Magic Trackpad`, and unpairs each match. With nothing to
   unpair it is a no-op.
-- The LaunchAgent uses `WatchPaths` on
-  `/Library/Preferences/com.apple.Bluetooth.plist`. Any pairing change (the
-  trackpad coming back over Bluetooth writes to this file) triggers the script
-  event-driven — no polling, and nothing touches Wi-Fi or AWDL.
+- The LaunchAgent reacts two ways, and nothing touches Wi-Fi or AWDL:
+  - `StartInterval` (60 s) is the **reliable** mechanism. On macOS 26 (Tahoe)
+    the pairing keys live in `bluetoothd`'s private store, not in any watchable
+    plist — every Bluetooth prefs file (system *and* user level) stays stale on
+    (re)pair, so there is nothing to `WatchPaths` for pairing itself. The poll
+    sidesteps that entirely; the script is no-op-safe when there is nothing to
+    unpair, so it is cheap and quiet.
+  - `WatchPaths` on `~/Library/Preferences/com.apple.NewDeviceOutreach.plist`
+    and `~/Library/Preferences/com.apple.BezelServices.plist` — these *are*
+    rewritten the moment a device connects, so they fire the unpair almost
+    instantly on a re-pair, ahead of the next poll. They are heuristic (they
+    track device connects, not pairing), which is why the poll backs them up.
 
 ## Manual use
 
@@ -82,12 +90,13 @@ tail -f ~/Library/Logs/tpwire.log
 
 ## Troubleshooting
 
-If a rare re-pair slips through (macOS sometimes coalesces writes to the
-pairing database), add a periodic safety net to the plist — it runs the same
-no-op-safe script on an interval:
+The `StartInterval` backstop (60 s) is built in, behind the instant `WatchPaths`
+reaction. If your trackpad still spends too long on Bluetooth after a re-pair,
+lower it — the script is no-op-safe, so a tighter interval only costs a cheap
+`blueutil --paired` check:
 
 ```xml
-<key>StartInterval</key><integer>10</integer>
+<key>StartInterval</key><integer>20</integer>
 ```
 
 Reload after editing:

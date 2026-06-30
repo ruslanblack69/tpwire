@@ -72,6 +72,7 @@ install -m 0755 "$SRC/bin/tpwire" "$BIN"
 configure_mac
 
 sed -e "s#__TPWIRE_BIN__#$BIN#g" \
+    -e "s#__HOME__#$HOME#g" \
     -e "s#__LOG__#$LOG#g" \
     "$SRC/launchd/$LABEL.plist.template" > "$AGENT"
 

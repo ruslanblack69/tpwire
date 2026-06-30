@@ -32,9 +32,12 @@ BLUEUTIL="$(find_blueutil)" || {
   exit 127
 }
 
+# Timestamped log line (zsh prompt expansion, no `date` subprocess).
+log() { print -P -r -- "%D{%Y-%m-%d %H:%M:%S} tpwire: $*" }
+
 unpair() {
   "$BLUEUTIL" --unpair "$1"
-  print -- "tpwire: unpaired $1"
+  log "unpaired $1"
 }
 
 if [ -n "$MAC" ]; then
