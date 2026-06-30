@@ -5,4 +5,4 @@
 # falls back to matching paired devices named "Magic Trackpad".
 #
 # Find it with:  blueutil --paired
-TPWIRE_MAC=60-fb-42-d5-ca-50
+TPWIRE_MAC=00-00-00-00-00-00
